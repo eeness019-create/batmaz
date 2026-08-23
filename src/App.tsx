@@ -340,7 +340,7 @@ function App() {
     const formData = new FormData(form)
 
     try {
-      const response = await fetch('https://formspree.io/f/FORMSPREE_ID_BURAYA', {
+      const response = await fetch('https://formspree.io/f/myegvrje', {
         method: 'POST',
         body: formData,
         headers: { Accept: 'application/json' },
