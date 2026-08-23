@@ -268,7 +268,9 @@ function ParticleField() {
 }
 
 function IntroSplash({ onDone }: { onDone: () => void }) {
-  const [phase, setPhase] = useState<'enter' | 'exit' | 'done'>('enter')
+  const [phase, setPhase] = useState<'counting' | 'reveal' | 'exit' | 'done'>('counting')
+  const [percent, setPercent] = useState(0)
+  const letters = 'BATMAZ'.split('')
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -283,17 +285,34 @@ function IntroSplash({ onDone }: { onDone: () => void }) {
 
     document.body.style.overflow = 'hidden'
 
-    const t1 = window.setTimeout(() => setPhase('exit'), 1100)
-    const t2 = window.setTimeout(() => onDone(), 1650)
-    const t3 = window.setTimeout(() => {
+    const countDuration = 1300
+    const start = performance.now()
+    let frameId = 0
+
+    function tick(now: number) {
+      const t = Math.min(1, (now - start) / countDuration)
+      const eased = 1 - (1 - t) * (1 - t) * (1 - t)
+      setPercent(Math.round(eased * 100))
+      if (t < 1) {
+        frameId = requestAnimationFrame(tick)
+      }
+    }
+    frameId = requestAnimationFrame(tick)
+
+    const t1 = window.setTimeout(() => setPhase('reveal'), countDuration + 150)
+    const t2 = window.setTimeout(() => setPhase('exit'), countDuration + 950)
+    const t3 = window.setTimeout(() => onDone(), countDuration + 1500)
+    const t4 = window.setTimeout(() => {
       setPhase('done')
       document.body.style.overflow = ''
-    }, 2000)
+    }, countDuration + 1850)
 
     return () => {
+      cancelAnimationFrame(frameId)
       window.clearTimeout(t1)
       window.clearTimeout(t2)
       window.clearTimeout(t3)
+      window.clearTimeout(t4)
       document.body.style.overflow = ''
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -303,7 +322,24 @@ function IntroSplash({ onDone }: { onDone: () => void }) {
 
   return (
     <div className={`intro-splash ${phase === 'exit' ? 'is-exiting' : ''}`} aria-hidden="true">
-      <span className="intro-wordmark">BATMAZ</span>
+      <div className="intro-stage">
+        <span className={`intro-counter ${phase !== 'counting' ? 'is-hidden' : ''}`}>
+          {percent}
+          <em>%</em>
+        </span>
+        <div className={`intro-wordmark ${phase === 'reveal' || phase === 'exit' ? 'is-visible' : ''}`}>
+          {letters.map((letter, index) => (
+            <span
+              className="intro-letter"
+              key={`${letter}-${index}`}
+              style={{ transitionDelay: `${index * 0.06}s` }}
+            >
+              {letter}
+            </span>
+          ))}
+        </div>
+        <span className={`intro-rule ${phase === 'counting' ? 'is-growing' : ''}`} />
+      </div>
     </div>
   )
 }
